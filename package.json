@@ -1,0 +1,38 @@
+{
+  "name": "wallpaper-switcher",
+  "version": "1.0.0",
+  "description": "Automatically manage wallpaper of Windows on a multi-monitor setup",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "node ./node_modules/watchify/bin/cmd.js ./app/app.js -t babelify -o static/js/bundle.js",
+    "start": "start ./node_modules/electron/dist/electron.exe ."
+  },
+  "keywords": [
+    "Electron",
+    "Windows",
+    "wallpaper",
+    "multi-monitor"
+  ],
+  "author": "Shuhao Tan",
+  "license": "MIT",
+  "dependencies": {
+    "color": "^2.0.0",
+    "edge": "github:tjanczuk/edge",
+    "electron": "^1.7.5",
+    "react": "^15.6.1",
+    "react-dom": "^15.6.1",
+    "winston": "^2.3.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-react": "^6.24.1",
+    "babelify": "^7.3.0",
+    "browserify": "^14.4.0",
+    "electron-rebuild": "^1.6.0",
+    "electron-reload": "^1.2.1",
+    "watchify": "^3.9.0"
+  }
+}
