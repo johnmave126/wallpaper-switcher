@@ -86,9 +86,9 @@ function transform(monitors) {
     for(var i = 0; i < monitors.length; i++) {
         var rect = monitors[i].rect;
         left = Math.min(left, rect.Left);
-        top = Math.min(left, rect.Top);
-        bottom = Math.max(left, rect.Bottom);
-        right = Math.max(left, rect.Right);
+        top = Math.min(top, rect.Top);
+        bottom = Math.max(bottom, rect.Bottom);
+        right = Math.max(right, rect.Right);
     }
     for(var i = 0; i < monitors.length; i++) {
         var rect = monitors[i].rect;

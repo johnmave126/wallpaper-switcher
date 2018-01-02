@@ -83,7 +83,7 @@ class Background extends React.Component {
     }
 
     render() {
-        var margin = 10;
+        const margin = 10;
         var canvasWidth = this.state.canvasWidth - 2 * margin;
         var canvasHeight = this.state.canvasHeight - 2 * margin;
         var scale = Math.min(canvasWidth / this.state.monitorInfo.width, canvasHeight / this.state.monitorInfo.height);
