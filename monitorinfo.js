@@ -1,41 +1,38 @@
-var exports = module.exports = {};
-
+const EventEmitter = require("events").EventEmitter;
 const dw = require('./winapi/DesktopWallpaper.js');
 const pump = require('./winapi/MessagePump.js');
 const logger = require('./logger.js');
 
-var listeners = [];
-
-exports.load = function(callback) {
-    var idw = dw.DesktopWallpaper;
-    var monitors = [];
-    var err;
-    try {
-        var monitor_cnt = idw.GetMonitorDevicePathCount(null, true);
-        for(var i = 0; i < monitor_cnt; i++) {
-            var id = idw.GetMonitorDevicePathAt({monitorIndex: i}, true);
-            try {
-                var rect = idw.GetMonitorRECT({monitorID: id}, true);
-                monitors.push({
-                    id: id,
-                    rect: rect
-                });
-            }
-            catch (e) {
-                //Do nothing
+class MonitorInfo extends EventEmitter {
+    load(callback) {
+        var idw = dw.DesktopWallpaper;
+        var monitors = [];
+        var err;
+        try {
+            var monitor_cnt = idw.GetMonitorDevicePathCount(null, true);
+            for(var i = 0; i < monitor_cnt; i++) {
+                var id = idw.GetMonitorDevicePathAt({monitorIndex: i}, true);
+                try {
+                    var rect = idw.GetMonitorRECT({monitorID: id}, true);
+                    monitors.push({
+                        id: id,
+                        rect: rect
+                    });
+                }
+                catch (e) {
+                    //Do nothing
+                }
             }
         }
-    }
-    catch (e) {
-        err = e;
-    }
+        catch (e) {
+            err = e;
+        }
 
-    if(typeof callback === 'function') callback(err, transform(monitors));
-};
+        if(typeof callback === 'function') callback(err, transform(monitors));
+    }
+}
 
-exports.onchange = function(callback) {
-    if(typeof callback === 'function') listeners.push(callback);
-};
+var exports = module.exports = new MonitorInfo();
 
 pump.subscribe(function(_, callback) {
     logger.debug('Monitor changed');
@@ -46,7 +43,7 @@ pump.subscribe(function(_, callback) {
                 logger.error('Cannot fetch monitor info: %s', err.message);
                 return;
             }
-            publish(monitors);
+            exports.emit('change', monitors);
             //Check again after 7s in case the monitor starts slow
             setTimeout(function() {
                 exports.load(function(err, new_monitors) {
@@ -55,7 +52,7 @@ pump.subscribe(function(_, callback) {
                         return;
                     }
                     if(!compare_monitors(monitors, new_monitors)) {
-                        publish(new_monitors);
+                        exports.emit('change', new_monitors);
                     }
                 });
             }, 7000);
@@ -73,12 +70,6 @@ function compare_monitors(m1, m2) {
         if(m1.monitors[i].id !== m1.monitors[i].id || !compare_rect(m1.monitors[i].rect, m1.monitors[i].rect)) return false;
     }
     return true;
-}
-
-function publish(monitors) {
-    for(var i = 0; i < listeners.length; i++) {
-        listeners[i](JSON.parse(JSON.stringify(monitors)));
-    }
 }
 
 function transform(monitors) {

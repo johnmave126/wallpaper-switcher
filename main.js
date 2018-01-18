@@ -11,7 +11,7 @@ function create_window() {
         width: 800,
         height: 600,
         minWidth: 513,
-        minHeight: 356,
+        minHeight: 374,
         icon: path.join(__dirname, 'static', 'res', 'icon.png')
     });
 
@@ -43,7 +43,7 @@ function create_window() {
         });
     });
 
-    monitorinfo.onchange(function(new_monitors) {
+    monitorinfo.on('change', function(new_monitors) {
         win.send('monitors', new_monitors);
     });
 }
