@@ -7,7 +7,7 @@
     cursor: default;
 }
 
-html, body {
+html, body, #container {
     width: 100%;
     height: 100%;
     overflow-y: hidden;
@@ -16,6 +16,10 @@ html, body {
 
 body {
     padding-top: 15px;
+}
+
+#container > div {
+    height: 100%;
 }
 
 a {
@@ -38,6 +42,10 @@ a:active {
     font-family: "Segoe MDL2 Assets", "Segoe UI Symbol";
     font-style: normal;
     -webkit-font-smoothing: antialiased;
+}
+
+.icon-down::before {
+    content: "\e70d";
 }
 
 .icon-info::before {
@@ -72,7 +80,7 @@ a:active {
     height: 30px;
     text-align: center;
     line-height: 30px;
-    transition: transform 200ms ease-in-out;
+    transition: transform 100ms ease-in-out;
 
 }
 
@@ -142,7 +150,86 @@ a:active {
 }
 
 /* Select */
+.select {
+    display: inline-block;
+    min-width: 300px;
+    border: 2px solid #999999;
+    padding: 5px 10px;
+}
 
+.select:hover {
+    border-color: #666666;
+}
+
+.select:active {
+    border-color: #999999;
+    background-color: #CCCCCC;
+}
+
+.select .select-box {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.select .select-box .select-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+}
+
+.select .select-box .icon {
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+.select .select-options {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    overflow: hidden;
+    z-index: 3;
+}
+
+.select .select-options-box {
+    background-color: #F2F2F2;
+    display: inline-flex;
+    flex-direction: column;
+    position: absolute;
+    padding: 7px 0;
+    border: 1px solid #D6D6D6;
+    overflow-y: auto;
+}
+
+.select .select-item {
+    white-space: nowrap;
+    padding: 7px 11px;
+    transition: transform 100ms ease-in-out;
+}
+
+.select .select-item:hover {
+    background-color: #DADADA;
+}
+
+.select .select-item:not(.selected):active {
+    background-color: #C2C2C2;
+    transform: scale(0.99, 0.99);
+}
+
+.select .select-item.selected {
+    background-color: var(--xlight-accent-color);
+}
+
+.select .select-item.selected:hover {
+    background-color: var(--light-accent-color);
+}
+
+.select .select-item.selected:active {
+    background-color: var(--slight-accent-color);
+}
 
 /* Nav */
 .nav-container {
@@ -183,15 +270,15 @@ a:active {
     transition: transform 200ms ease-in-out;
 }
 
-.nav-item.nav-active {
+.nav-item.active {
     color: var(--accent-color);
 }
 
-.nav-item.nav-active .nave-active-indicator {
+.nav-item.active .nav-active-indicator {
     display: block;
 }
 
-.nave-active-indicator {
+.nav-active-indicator {
     position: absolute;
     display: none;
     height: 100%;
@@ -242,6 +329,7 @@ a:active {
 .content {
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
 .content > * {
@@ -250,6 +338,7 @@ a:active {
 
 .content h1, .content .body > * {
     margin-bottom: 15px;
+    max-width: 700px;
 }
 
 .content h1 {
@@ -290,7 +379,8 @@ a:active {
 @media (min-width: 717px) {
     .content {
         position: absolute;
-        left: 320px;
+        padding-left: 320px;
+        left: 0;
         right: 0;
         top: 15px;
         bottom: 0;

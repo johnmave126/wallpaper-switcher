@@ -1,5 +1,6 @@
 import React from 'react';
 
+import MonitorSelector from './monitor-selector';
 import CheckBox from './checkbox';
 import Select from './select';
 import SelectItem from './select-item';
@@ -16,27 +17,17 @@ class Background extends React.Component {
             },
             selectedMonitor: '',
             currentProfile: {},
-            canvasWidth: 0,
-            canvasHeight: 0,
             shuffled: false,
+            fit: 'fill'
         };
 
-        this.handleResize = this.handleResize.bind(this);
         this.handleMonitors = this.handleMonitors.bind(this);
-        this.switchDisplay = this.switchDisplay.bind(this);
+        this.handleMonitorSwitch = this.handleMonitorSwitch.bind(this);
         this.detectMonitor = this.detectMonitor.bind(this);
         this.handleShuffleChange = this.handleShuffleChange.bind(this);
+        this.handleFitChange = this.handleFitChange.bind(this);
     }
 
-    handleResize() {
-        var width = window.getComputedStyle(this.monitorContainer).getPropertyValue('width');
-        var width_numerical = parseFloat(width);
-        var height_numerical = width_numerical * 7 /16;
-        this.setState({
-            canvasWidth: width_numerical,
-            canvasHeight: height_numerical
-        });
-    }
 
     handleMonitors(_, info) {
         this.setState(function(prevState) {
@@ -53,9 +44,9 @@ class Background extends React.Component {
         });
     }
 
-    switchDisplay(e) {
+    handleMonitorSwitch(new_id) {
         this.setState({
-            selectedMonitor: e.target.dataset.id
+            selectedMonitor: new_id
         });
     }
 
@@ -69,58 +60,80 @@ class Background extends React.Component {
         });
     }
 
+    handleFitChange(new_val) {
+        this.setState({
+            fit: new_val
+        });
+    }
+
     componentDidMount() {
-        var that = this;
-        this.handleResize();
-        window.addEventListener('resize', this.handleResize);
-        window.ipcRenderer.send('query-monitors');
         window.ipcRenderer.on('monitors', this.handleMonitors);
+        window.ipcRenderer.send('query-monitors');
     }
 
     componentWillUnmount() {
-        window.removeEventListener('resize', this.handleResize);
         window.ipcRenderer.removeListener('monitors', this.handleMonitors);
     }
 
     render() {
-        const margin = 10;
-        var canvasWidth = this.state.canvasWidth - 2 * margin;
-        var canvasHeight = this.state.canvasHeight - 2 * margin;
-        var scale = Math.min(canvasWidth / this.state.monitorInfo.width, canvasHeight / this.state.monitorInfo.height);
-        var marginH = margin + (canvasWidth - scale * this.state.monitorInfo.width) / 2,
-            marginV = margin + (canvasHeight - scale * this.state.monitorInfo.height) / 2;
-        var monitor_selectors = this.state.monitorInfo.monitors.map(function(monitor, idx) {
-            var style = {
-                top: (marginV + monitor.rect.Top * scale) + 'px',
-                left: (marginH + monitor.rect.Left * scale) + 'px',
-                width: ((monitor.rect.Right - monitor.rect.Left) * scale) + 'px',
-                height: ((monitor.rect.Bottom - monitor.rect.Top) * scale) + 'px',
-                fontSize: ((monitor.rect.Bottom - monitor.rect.Top) * scale * 0.8) + 'px',
-            };
-            var isActive = monitor.id === this.state.selectedMonitor;
-            return (
-                <div className={`monitor-selector ${isActive?"active":""}`} style={style} key={monitor.id}>
-                    <div data-id={monitor.id} className="monitor-rect" onClick={this.switchDisplay}>{(idx + 1)}</div>
-                </div>
-            );
-        }, this);
-
         return (
             <div className="body">
                 <h2>Select displays</h2>
                 <p>Select a display below to change its wallpaper and settings</p>
-                <div style={{height: this.state.canvasHeight + 'px'}} className="monitor-container" ref={(div) => { this.monitorContainer = div; }}>
-                {monitor_selectors}
-                </div>
+                <MonitorSelector onChange={this.handleMonitorSwitch} monitorInfo={this.state.monitorInfo} selectedMonitor={this.state.selectedMonitor} />
                 <div className="monitor-tools">
                     <div className="button-gray" onClick={this.detectMonitor}>Detect</div>
                 </div>
                 <h3>Shuffle</h3>
-                <CheckBox handleChange={this.handleShuffleChange} checked={this.state.shuffled}>Off</CheckBox>
-                <Select>
+                <CheckBox onChange={this.handleShuffleChange} checked={this.state.shuffled}>{this.state.shuffled ? "On" : "Off"}</CheckBox>
+                <h3>Choose a fit</h3>
+                <Select onChange={this.handleFitChange} value={this.state.fit}>
                     <SelectItem value="fill">Fill</SelectItem>
                     <SelectItem value="stretch">Stretch</SelectItem>
+                    <SelectItem value="stretch2">Stretch</SelectItem>
+                    <SelectItem value="stretch3">Stretch</SelectItem>
+                    <SelectItem value="stretch4">Stretch</SelectItem>
+                    <SelectItem value="stretch5">Stretch</SelectItem>
+                    <SelectItem value="stretch6">Stretch</SelectItem>
+                    <SelectItem value="stretch7">Stretch</SelectItem>
+                    <SelectItem value="stretch8">Stretch</SelectItem>
+                    <SelectItem value="stretch9">Stretch</SelectItem>
+                    <SelectItem value="stretch10">Stretch</SelectItem>
+                    <SelectItem value="stretch11">Stretch</SelectItem>
+                    <SelectItem value="stretch12">Stretch</SelectItem>
+                    <SelectItem value="stretch13">Stretch</SelectItem>
+                    <SelectItem value="stretch14">Stretch</SelectItem>
+                    <SelectItem value="stretch15">Stretch</SelectItem>
                 </Select>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
+                <p>Select a display below to change its wallpaper and settings</p>
             </div>
         );
     }

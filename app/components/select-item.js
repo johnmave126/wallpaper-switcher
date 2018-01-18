@@ -1,4 +1,5 @@
 import React from 'react';
+import cn from 'classnames';
 
 class SelectItem extends React.Component {
     constructor(props) {
@@ -6,9 +7,8 @@ class SelectItem extends React.Component {
     }
 
     render() {
-
         return (
-            <div className="select-item">
+            <div data-value={this.props.value} className={cn("select-item", {selected: this.props.selected})}>
                 {this.props.children}
             </div>
         );
