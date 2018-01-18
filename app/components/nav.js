@@ -1,4 +1,5 @@
 import React from 'react';
+import cn from 'classnames';
 
 import NavItem from './nav-item';
 
@@ -13,12 +14,12 @@ class Nav extends React.Component {
             {name: 'About', iconClass: 'info'}
         ].map(function(item) {
             return (
-                <NavItem activePage={this.props.activePage} accentColor={this.props.accentColor} switchPage={this.props.switchPage}
+                <NavItem activePage={this.props.activePage} switchPage={this.props.switchPage}
                          name={item.name} key={item.name} iconClass={item.iconClass} />
             );
         }, this);
         return (
-            <div className={`nav-container ${this.props.navOpen?'active':''}`}>
+            <div className={cn("nav-container", {active: this.props.navOpen})}>
                 <div className="nav-sidebar">
                     {items}
                 </div>

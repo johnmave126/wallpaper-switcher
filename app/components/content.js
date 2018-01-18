@@ -14,9 +14,7 @@ class Content extends React.Component {
     }
 
     render() {
-        var content = React.createElement(Pages[this.props.activePage], {
-            accentColor: this.props.accentColor
-        });
+        var content = React.createElement(Pages[this.props.activePage]);
         return (
             <div className="content">
                 <div className="header">

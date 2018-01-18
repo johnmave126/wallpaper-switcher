@@ -14,6 +14,7 @@ class App extends React.Component {
             windowWidth: window.innerWidth,
             windowHeight: window.innerHeight,
             accentColor: '#000000',
+            slightAccentColor: '#000000',
             lightAccentColor: '#000000',
             xlightAccentColor: '#000000'
         };
@@ -41,9 +42,10 @@ class App extends React.Component {
         window.addEventListener('resize', this.updateDimension);
         window.ipcRenderer.send('query-accent-color');
         window.ipcRenderer.on('accent-color', function(_, new_color) {
-            var color = Color('#' + new_color.substr(0, 6));
+            var color = Color('#' + new_color);
             that.setState({
                 accentColor: color.string(),
+                slightAccentColor: color.lighten(0.2).string(),
                 lightAccentColor: color.lighten(0.3).string(),
                 xlightAccentColor: color.lighten(0.5).string()
             });
@@ -67,29 +69,11 @@ class App extends React.Component {
         this.setState({navOpen: true});
     }
 
-    static adjustColorLum(hex, lum) {
-        // validate hex string
-        hex = String(hex).replace(/[^0-9a-f]/gi, '');
-        if (hex.length < 6) {
-            hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-        }
-        lum = lum || 0;
-
-        // convert to decimal and change luminosity
-        var rgb = "#", c, i;
-        for (i = 0; i < 3; i++) {
-            c = parseInt(hex.substr(i * 2, 2), 16);
-            c = Math.round(Math.min(Math.max(0, c + (c * lum)), 255)).toString(16);
-            rgb += ("00" + c).substr(c.length);
-        }
-
-        return rgb;
-    }
-
     render () {
         return (
             <div style={{
                 '--accent-color': this.state.accentColor,
+                '--slight-accent-color': this.state.slightAccentColor,
                 '--light-accent-color': this.state.lightAccentColor,
                 '--xlight-accent-color': this.state.xlightAccentColor
             }}>

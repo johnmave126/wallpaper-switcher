@@ -1,4 +1,5 @@
 import React from 'react';
+import cn from 'classnames';
 
 class NavItem extends React.Component {
     constructor(props) {
@@ -13,10 +14,10 @@ class NavItem extends React.Component {
     render() {
         var isActive = this.props.name === this.props.activePage;
         return (
-            <div className={`nav-item ${isActive?"nav-active":""} button button-white`}
+            <div className={cn("nav-item", "button", "button-white", {active: isActive})}
                  onClick={this.handleClick}>
                 <div className="nav-title">
-                    <div className="nave-active-indicator"></div>
+                    <div className="nav-active-indicator"></div>
                     <span className={`icon nav-icon icon-${this.props.iconClass}`}></span>
                     <div className="nav-name">{this.props.name}</div>
                 </div>

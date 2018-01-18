@@ -1,4 +1,6 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+import cn from 'classnames';
 
 class CheckBox extends React.Component {
     constructor(props) {
@@ -30,7 +32,7 @@ class CheckBox extends React.Component {
         window.removeEventListener('mousemove', this.handleMouseMove);
         this.setState(function(prevState, props) {
             if(prevState.defaultToOther || (props.checked ? -1 : 1) * (e.screenX - prevState.initX) > 12) {
-                typeof this.props.handleChange == 'function' && this.props.handleChange(!props.checked);
+                this.props.onChange(!props.checked);
             }
             return {
                 active: false
@@ -67,8 +69,7 @@ class CheckBox extends React.Component {
         }
         return (
             <div className="checkbox" onMouseDown={this.handleMouseDown}>
-                <div style={this.props.checked ? {backgroundColor: this.props.accentColor, borderColor: this.props.accentColor} : {}}
-                     className={`box ${this.state.active?"active":""}`}
+                <div className={cn("box", {active: this.state.active})}
                      data-checked={this.props.checked || null}>
                     <div style={ballStyle}></div>
                 </div>
@@ -77,5 +78,15 @@ class CheckBox extends React.Component {
         );
     }
 }
+
+CheckBox.defaultProps = {
+    onChange: () => {},
+    checked: false
+};
+
+CheckBox.propTypes = {
+    onChange: PropTypes.func,
+    checked: PropTypes.bool
+};
 
 export default CheckBox;
