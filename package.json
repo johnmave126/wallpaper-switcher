@@ -5,8 +5,9 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "node ./node_modules/watchify/bin/cmd.js ./app/app.js -t babelify -o static/js/bundle.js",
-    "start": "start ./node_modules/electron/dist/electron.exe ."
+    "watch": "watchify ./app/app.js -t babelify -o static/js/bundle.js",
+    "start": "electron .",
+    "pack": "electron-packager . wallpaper-switcher --platform=win32 --arch=all --out=build --overwrite --ignore=\"\\.gitignore\" --ignore=\".*\\.sublime-project\" --ignore=\".*\\.sublime-workspace\" --ignore=\"\\.tern-project\" --ignore=\"app/\""
   },
   "keywords": [
     "Electron",
@@ -21,10 +22,14 @@
     "color": "^2.0.0",
     "edge": "github:tjanczuk/edge",
     "electron": "^1.7.5",
+    "electron-is-dev": "^0.3.0",
+    "file-url": "^2.0.2",
+    "immutability-helper": "^2.6.4",
     "prop-types": "^15.6.0",
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
-    "winston": "^2.3.1"
+    "winston": "^2.3.1",
+    "yargs": "^10.1.1"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -33,6 +38,8 @@
     "babel-preset-react": "^6.24.1",
     "babelify": "^7.3.0",
     "browserify": "^14.4.0",
+    "cross-env": "^5.1.3",
+    "electron-packager": "^10.1.1",
     "electron-rebuild": "^1.6.0",
     "electron-reload": "^1.2.1",
     "watchify": "^3.9.0"
