@@ -3,3 +3,4 @@ static/js/bundle.js
 *.sublime-project
 *.sublime-workspace
 .tern-project
+build
