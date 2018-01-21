@@ -1,4 +1,5 @@
 import React from 'react';
+const { shell } = window.electron;
 
 class ExtLink extends React.Component {
     constructor(props) {
