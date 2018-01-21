@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Color from 'color';
+const { ipcRenderer } = window.electron;
 
 import Nav from './components/nav';
 import Content from './components/content'
@@ -40,8 +41,8 @@ class App extends React.Component {
     componentDidMount() {
         var that = this;
         window.addEventListener('resize', this.updateDimension);
-        window.ipcRenderer.send('query-accent-color');
-        window.ipcRenderer.on('accent-color', function(_, new_color) {
+        ipcRenderer.send('query-accent-color');
+        ipcRenderer.on('accent-color', function(_, new_color) {
             var color = Color('#' + new_color);
             that.setState({
                 accentColor: color.string(),

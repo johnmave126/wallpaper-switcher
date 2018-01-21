@@ -1,55 +1,51 @@
-const {app, BrowserWindow, ipcMain, systemPreferences} = require('electron');
+const {app} = require('electron');
 const path = require('path');
-const url = require('url');
-const monitorinfo = require('./monitorinfo.js');
+const isDev = require('electron-is-dev');
+
+const {createWindow} = require('./config_tool.js');
 
 var win;
-require('electron-reload')(__dirname);
 
-function create_window() {
-    win = new BrowserWindow({
-        width: 800,
-        height: 600,
-        minWidth: 513,
-        minHeight: 374,
-        icon: path.join(__dirname, 'static', 'res', 'icon.png')
-    });
+if(isDev) {
+    require('electron-reload')(__dirname, {electron: path.join(__dirname, 'node_modules', '.bin', 'electron')});
+}
 
-    win.loadURL(url.format({
-        pathname: path.join(__dirname, 'static', 'index.html'),
-        protocol: 'file:',
-        slashes: true
-    }));
+require('yargs')
+    .usage('$0 [cmd]')
+    .command('$0', 'run the config program', () => {}, run_config)
+    .command('service', 'run the background service of the switcher', () => {}, run_service)
+    .command('install', 'install the background service to the system', () => {}, run_installer)
+    .command('uninstall', 'remove the background service from the system', () => {}, run_uninstaller)
+    .help()
+    .strict()
+    .argv;
 
-    win.setMenu(null);
 
-    win.webContents.openDevTools();
+function run_config() {
+    app.on('ready', createWindow);
 
-    win.on('closed', function() {
-        win = null;
-    });
-
-    ipcMain.on('query-accent-color', function() {
-        win.send('accent-color', systemPreferences.getAccentColor());
-    });
-
-    systemPreferences.on('accent-color-changed', function(e, new_color) {
-        win.send('accent-color', new_color);
-    });
-
-    ipcMain.on('query-monitors', function() {
-        monitorinfo.load(function(err, monitors) {
-            win.send('monitors', monitors);
-        });
-    });
-
-    monitorinfo.on('change', function(new_monitors) {
-        win.send('monitors', new_monitors);
+    app.on('window-all-closed', function() {
+        app.quit();
     });
 }
 
-app.on('ready', create_window);
+function run_service() {
+    app.on('ready', () => {
+        console.log('running service');
+        app.quit();
+    })
+}
 
-app.on('window-all-closed', function() {
-    app.quit();
-});
+function run_installer() {
+    app.on('ready', () => {
+        console.log('running installer');
+        app.quit();
+    })
+}
+
+function run_uninstaller() {
+    app.on('ready', () => {
+        console.log('running uninstaller');
+        app.quit();
+    })
+}

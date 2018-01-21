@@ -4,7 +4,7 @@ const pump = require('./winapi/MessagePump.js');
 const logger = require('./logger.js');
 
 class MonitorInfo extends EventEmitter {
-    load(callback) {
+    load(callback = () => {}) {
         var idw = dw.DesktopWallpaper;
         var monitors = [];
         var err;
@@ -28,7 +28,7 @@ class MonitorInfo extends EventEmitter {
             err = e;
         }
 
-        if(typeof callback === 'function') callback(err, transform(monitors));
+        callback(err, transform(monitors));
     }
 }
 

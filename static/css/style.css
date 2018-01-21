@@ -76,23 +76,25 @@ a:active {
 .button-gray {
     background-color: #CCCCCC;
     display: inline-block;
-    width: 80px;
-    height: 30px;
+    min-width: 90px;
+    padding: 0 25px;
+    height: 35px;
     text-align: center;
-    line-height: 30px;
+    line-height: 35px;
     transition: transform 100ms ease-in-out;
 
 }
 
 .button-gray:hover {
     border: 2px solid #7A7A7A;
-    line-height: 26px;
+    line-height: 31px;
+    padding: 0 23px;
 }
 
 .button-gray:active {
     background-color: #999999;
     border: none;
-    line-height: 30px;
+    line-height: 35px;
     transform: scale(0.99, 0.99);
 }
 
@@ -367,6 +369,7 @@ a:active {
 .body {
     flex-grow: 0;
     overflow-y: auto;
+    padding-bottom: 60px;
 }
 
 .header-nav-toggle {
@@ -442,4 +445,20 @@ a:active {
 .monitor-tools {
     display: flex;
     flex-direction: row-reverse;
+}
+
+.current-background {
+    display: block;
+    width: 80px;
+    height: 80px;
+    border: solid 1px #999999;
+    background: linear-gradient(-45deg, white calc(50% - 1px), rgb(197, 5, 0) calc(50%), white calc(50% + 1px));
+    background-origin: border-box;
+    background-repeat: no-repeat;
+}
+
+.current-background.filled {
+    border: none;
+    background-position: 50% 50%;
+    background-size: cover;
 }
