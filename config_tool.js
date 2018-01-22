@@ -3,10 +3,11 @@ const path = require('path');
 const url = require('url');
 const isDev = require('electron-is-dev');
 const monitorinfo = require('./monitorinfo.js');
-const profilestore = require('./profilestore.js');
+const DataStore = require('./datastore.js');
 const {simpleClone} = require('./utils.js');
 
 var exports = module.exports = {};
+var win;
 exports.createWindow = function() {
     win = new BrowserWindow({
         width: 800,
@@ -56,6 +57,8 @@ exports.createWindow = function() {
         });
     });
 
+    var profilestore = new DataStore('config.json');
+
     ipcMain.on('save-profiles', (_, profiles) => {
         profilestore.save(profiles);
     });
@@ -63,4 +66,4 @@ exports.createWindow = function() {
     profilestore.on('change', (new_profiles) => {
         win.send('profiles', simpleClone(new_profiles));
     });
-}
+};
