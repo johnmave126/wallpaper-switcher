@@ -51,19 +51,19 @@ exports.createWindow = function() {
         win.send('monitors', simpleClone(new_monitors));
     });
 
+    var profiles_store = new DataStore('config.json');
+
     ipcMain.on('query-profiles', () => {
-        profilestore.load((_, profiles) => {
+        profiles_store.load((_, profiles) => {
             win.send('profiles', simpleClone(profiles));
         });
     });
 
-    var profilestore = new DataStore('config.json');
-
     ipcMain.on('save-profiles', (_, profiles) => {
-        profilestore.save(profiles);
+        profiles_store.save(profiles);
     });
 
-    profilestore.on('change', (new_profiles) => {
+    profiles_store.on('change', (new_profiles) => {
         win.send('profiles', simpleClone(new_profiles));
     });
 };

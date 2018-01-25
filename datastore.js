@@ -9,17 +9,29 @@ class DataStore extends EventEmitter {
         super();
         var that = this;
         this.path = path.join(localdata.data_dir, filename);
-        fs.watch(this.path, 'utf8', (eventType, filename) => {
-            logger.debug('%s changed', filename);
-            that.load(function(err, filecontent) {
-                if(err) {
-                    logger.error('Cannot fetch %s: %s', filename, err.message);
-                    return;
-                }
-                logger.debug('%s reloaded', filename);
-                that.emit('change', filecontent);
-            });
+        fs.access(this.path, fs.constants.R_OK | fs.constants.W_OK, (err) => {
+            if(err) {
+                fs.writeFile(that.path, "{}", () => {
+                    startWatch();
+                });
+                return;
+            }
+            startWatch();
         });
+
+        function startWatch() {
+            fs.watch(that.path, 'utf8', (eventType, filename) => {
+                logger.debug('%s changed', filename);
+                that.load(function(err, filecontent) {
+                    if(err) {
+                        logger.error('Cannot fetch %s: %s', filename, err.message);
+                        return;
+                    }
+                    logger.debug('%s reloaded', filename);
+                    that.emit('change', filecontent);
+                });
+            });
+        }
     }
 
     load(callback = () => {}) {
