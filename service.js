@@ -7,6 +7,7 @@ const devnull = require('dev-null');
 const fs = require('fs');
 const Jimp = require('jimp');
 const tmp = require('tmp');
+const promisify = require('util.promisify');
 
 const {simpleClone, shuffle} = require('./utils.js');
 const ad = require('./winapi/ActiveDesktop.js');
@@ -43,33 +44,11 @@ exports.startService = function(argv) {
         });
     });
 */
-    var promise_load = Promise.all([
-        new Promise((resolve, reject) => {
-            profiles_store.load((err, _profiles) => {
-                if(err) {
-                    reject(err);
-                }
-                resolve(_profiles);
-            });
-        }),
-        new Promise((resolve, reject) => {
-            status_store.load((err, _status) => {
-                if(err) {
-                    reject(err);
-                }
-                resolve(_status);
-            });
-        }),
-        new Promise((resolve, reject) => {
-            monitorinfo.load((err, _monitors) => {
-                if(err) {
-                    reject(err);
-                }
-                resolve(_monitors);
-            });
-        })
-    ]);
-    promise_load.then((loaded_val) => {
+    Promise.all([
+        promisify(profiles_store.load.bind(profiles_store))(),
+        promisify(status_store.load.bind(status_store))(),
+        promisify(monitorinfo.load.bind(monitorinfo))()
+    ]).then((loaded_val) => {
         profiles = simpleClone(loaded_val[0]);
         status = simpleClone(loaded_val[1]);
         monitors = simpleClone(loaded_val[2]);
@@ -78,11 +57,22 @@ exports.startService = function(argv) {
         status.current = status.current || {};
         status.future = status.future || {};
 
-        updateState().then(() => commitBackground()).then(() => {process.exit(0);}).catch((err) => {console.log(err);console.trace(err);});
+        boot();
     }, (err) => {
         //service.stop(-1);
         process.exit(-1);
     });
+
+    function boot() {
+        updateState()
+        .then(commitBackground)
+        .then(() => {
+            process.exit(0);
+        })
+        .catch((err) => {
+            console.log(err);console.trace(err);
+        });
+    }
 
     function updateState() {
         return Promise.all(monitors.monitors.map((monitor) => {
@@ -173,77 +163,39 @@ exports.startService = function(argv) {
             else {
                 return new Jimp(rect.Right - rect.Left, rect.Bottom - rect.Top);
             }
-        })).then((images) => {
-            return monitors.monitors
-                   .reduce((canvas, monitor, idx) => canvas.blit(images[idx], monitor.rect.Left, monitor.rect.Top),
-                           new Jimp(monitors.width, monitors.height));
-        }).then((background) => {
-            return new Promise((resolve, reject) => {
-                tmp.file({mode: 0666, postfix: '.png', discardDescriptor: true}, (err, filepath) => {
-                    if(err) {
-                        reject(err);
-                    }
-                    background.write(filepath, (err) => {
-                        if(err) {
-                            reject(err);
-                        }
-                        resolve(filepath);
-                    });
-                });
-            });
-        }).then((filepath) => {
-            return new Promise((resolve, reject) => {
-                winapi.SendMessageTimeout({
-                     hwnd: winapi.FindWindow({lpClassName: 'Progman', lpWindowName: null}, true),
-                     Msg: 0x52c,
-                     wParam: 0,
-                     lParam: 0,
-                     fuFlags: 0,
-                     uTimeout: 500
-                 }, true);
-                iad.SetWallpaper({
-                    pwszWallpaper: filepath
-                }, (err) => {
-                    if(err) {
-                        reject(err);
-                    }
-                    resolve();
-                });
-            });
-        }).then(() => {
-            return new Promise((resolve, reject) => {
-                iad.SetWallpaperOptions({
-                    pwpo: {dwStyle: ad.WallpaperStyle.Span}
-                }, (err) => {
-                    if(err) {
-                        reject(err);
-                    }
-                    resolve();
-                });
-            });
-        }).then(() => {
-            return new Promise((resolve, reject) => {
-                iad.ApplyChanges({
-                    dwFlags: ad.Apply.All
-                }, (err) => {
-                    if(err) {
-                        reject(err);
-                    }
-                    resolve();
-                });
-            });
-        });
+        })).then((images) => 
+            monitors.monitors
+            .reduce((canvas, monitor, idx) => canvas.blit(images[idx], monitor.rect.Left, monitor.rect.Top),
+                                                          new Jimp(monitors.width, monitors.height));
+        ).then((background) => promisify(tmp.file)({mode: 0666, postfix: '.png', discardDescriptor: true})
+        ).then((filepath) => promisify(background.write.bind(background)(filepath).then(()=>filepath)
+        ).then((filepath) => 
+            promisify(winapi.FindWindow)({lpClassName: 'Progman', lpWindowName: null})
+            .then((hwnd) => promisify(winapi.SendMessageTimeout)({
+                hwnd: hwnd,
+                Msg: 0x52c,
+                wParam: 0,
+                lParam: 0,
+                fuFlags: 0,
+                uTimeout: 500
+            }))
+            .then(() => promisify(iad.SetWallpaper)({pwszWallpaper: filepath}))
+        ).then(() => promisify(iad.SetWallpaperOptions)({pwpo: {dwStyle: ad.WallpaperStyle.Span}})
+        ).then(() => promisify(iad.ApplyChanges)({dwFlags: ad.Apply.All}));
+    }
+
+    function setTimer() {
+
+    }
+
+    function onUpdate() {
+
     }
 
     function listCandidates(id) {
-        return new Promise((resolve, reject) => {
-            fs.readdir(profiles[id].slideshow_path, (err, files) => {
-                if(err) {
-                    resolve([]);
-                }
-                resolve(files.filter(fn => regex_image.test(fn)));
-            });
-        });
+        return promisify(fs.readdir)(profiles[id].slideshow_path)
+                .then((files) => files.filter(fn => regex_image.test(fn)))
+                .catch(() => []);
     }
 
     function createFuture(id) {
@@ -260,14 +212,7 @@ exports.startService = function(argv) {
     }
 
     function checkFile(dir, fn) {
-        return new Promise((resolve, reject) => {
-            fs.access(path.join(dir, fn), fs.constants.R_OK, (err) => {
-                if(err) {
-                    reject(err);
-                }
-                resolve(fn);
-            });
-        });
+        return promisify(fs.access)(path.join(dir, fn), fs.constants.R_OK);
     }
 };
 

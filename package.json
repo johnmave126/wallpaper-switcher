@@ -35,6 +35,7 @@
     "react": "^15.6.2",
     "react-dom": "^15.6.2",
     "tmp": "0.0.33",
+    "util.promisify": "^1.0.0",
     "winston": "^2.4.0",
     "yargs": "^10.1.2"
   },
