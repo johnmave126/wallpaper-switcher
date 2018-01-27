@@ -54,11 +54,12 @@ Delivering a installer that handles autorun automatically is on the roadmap.
   - [ ] Basic configuration
   - [ ] Different default configuration for different aspect ratios
 - [ ] Mannually change to next wallpaper (Like `Next Background` in the context menu of the desktop)
-- [ ] Real size mode: span a picture seamlessly across different monitors with different DPIs.
+- [ ] Real size mode: span a picture seamlessly across different monitors with different DPIs
   - [ ] Select a picture/slideshow and fit
   - [ ] Position configuration for picture
 - [ ] Wallpaper preview on config UI
-- [ ] Add comments to the source code.
+- [ ] Add comments to the source code
+- [ ] ~~Get rid of electron at all because it is too large for a small utility!~~
 
 ## License
 [MIT](https://github.com/johnmave126/wallpaper-switcher/blob/master/LICENSE)
