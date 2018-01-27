@@ -1,5 +1,5 @@
 import React from 'react';
-const { shell } = window.electron;
+const {shell} = window.electron;
 
 class ExtLink extends React.Component {
     constructor(props) {
@@ -9,7 +9,7 @@ class ExtLink extends React.Component {
 
     handleClick(e) {
         e.preventDefault();
-        window.shell.openExternal(e.target.href);
+        shell.openExternal(e.target.href);
     }
 
     render() {
