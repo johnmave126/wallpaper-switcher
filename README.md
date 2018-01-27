@@ -36,6 +36,7 @@ The config program recreates the native Windows 10 settings app experience. Zero
 Delivering a installer that handles autorun automatically is on the roadmap.
 ## Screenshot
 ![screenshot1](https://user-images.githubusercontent.com/1661662/35475424-355a0972-036c-11e8-9e23-bd0866380c90.png)
+![screenshot2](https://user-images.githubusercontent.com/1661662/35475610-9e2f698a-036f-11e8-92e6-b37034bfd346.png)
 
 ## Roadmap
 
