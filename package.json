@@ -7,6 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch": "watchify ./app/app.js -t babelify -o static/js/bundle.js",
     "start": "npm run buildreact && electron .",
+    "addautorun": "electron . install",
+    "removeautorun": "electron . uninstall",
     "buildreact": "browserify ./app/app.js -t babelify -o static/js/bundle.js",
     "postinstall": "electron-rebuild",
     "clean": "rimraf build",
