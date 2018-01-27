@@ -28,7 +28,9 @@ class DataStore extends EventEmitter {
                         return;
                     }
                     logger.debug('%s reloaded', filename);
-                    that.emit('change', filecontent);
+                    if(Object.keys(filecontent).length !== 0 || filecontent.constructor !== Object) {
+                        that.emit('change', filecontent);
+                    }
                 });
             });
         }
@@ -53,7 +55,7 @@ class DataStore extends EventEmitter {
         });
     }
 
-    save(obj, callback = (err) => err && logger.error('Cannot save profile: %s', err.message)) {
+    save(obj, callback = (err) => err && logger.error('Failed to save: %s', err.message)) {
         if(typeof obj !== 'object') {
             return callback(new TypeError('Content should be an object', 'datastore.js'));
         }

@@ -1,14 +1,12 @@
 const path = require('path');
-const elevator = require('elevator');
-const isAdmin = require('is-admin');
 const isDev = require('electron-is-dev');
-const service = require('os-service');
-const devnull = require('dev-null');
+const AutoLaunch = require('auto-launch');
 const fs = require('fs');
 const Jimp = require('jimp');
-const tmp = require('tmp');
 const promisify = require('util.promisify');
 const AsyncLock = require('async-lock');
+const {tmpdir} = require('os');
+const Registry = require('winreg');
 
 const {simpleClone, shuffle} = require('./utils.js');
 const ad = require('./winapi/ActiveDesktop.js');
@@ -20,6 +18,9 @@ const monitorinfo = require('./monitorinfo.js');
 var exports = module.exports = {};
 
 exports.startService = function(argv) {
+    const BG_FN = 'wallpaper-switcher-background.png';
+    const BG_PATH = path.join(tmpdir(), BG_FN);
+
     var status, profiles, monitors;
     var profiles_store = new DataStore('config.json');
     var status_store = new DataStore('status.json');
@@ -38,14 +39,6 @@ exports.startService = function(argv) {
     };
     const regex_image = /.+\.(jpg|jpeg|gif|png|bmp)$/;
 
-    service.run(devnull(), () => {
-        status_store.save(status, (err) => {
-            var rcode = err ? -1 : 0;
-            service.stop(rcode);
-            process.exit(rcode);
-        });
-    });
-
     Promise.all([
         promisify(profiles_store.load.bind(profiles_store))(),
         promisify(status_store.load.bind(status_store))(),
@@ -55,12 +48,12 @@ exports.startService = function(argv) {
         status = simpleClone(loaded_val[1]);
         monitors = simpleClone(loaded_val[2]);
 
-        status.tick = status.tick || Date.now();
         status.current = status.current || {};
         status.future = status.future || {};
 
         boot();
     }, (err) => {
+        logger.error(err.message);
         service.stop(-1);
         process.exit(-1);
     });
@@ -79,14 +72,17 @@ exports.startService = function(argv) {
         .then(() => {
             monitorinfo.on('change', onUpdateMonitor);
             profiles_store.on('change', onUpdateProfile);
+            logger.warn('started');
         })
         .catch((err) => {
-            console.trace(err);
+            logger.error(err.message);
+            service.stop(-1);
             process.exit(-1);
-        })
+        });
     }
 
     function updateState() {
+        status.tick = Date.now();
         return Promise.all(monitors.monitors.map((monitor) => {
             var id = monitor.id;
             let profile_updated = false;
@@ -120,10 +116,10 @@ exports.startService = function(argv) {
                             if(status.future[id].queue.length === 0) {
                                 return createFuture(id).then(() => profile_updated);
                             }
-                            return checkFile(profiles[id].slideshow_path, status.future.queue.shift())
+                            return checkFile(profiles[id].slideshow_path, status.future[id].queue.shift())
                                    .then(shift_success, shift_fail);
                         }
-                        return checkFile(profiles[id].slideshow_path, status.future.queue.shift())
+                        return checkFile(profiles[id].slideshow_path, status.future[id].queue.shift())
                                .then(shift_success, shift_fail);
                     }
                 }
@@ -140,7 +136,7 @@ exports.startService = function(argv) {
             if(profile.background === 'picture' || profile.background === 'slideshow') {
                 var img_path = profile.background === 'picture'
                              ? profile.picture_path
-                             : path.join(profile.slideshow_path, status[id].current.active);
+                             : path.join(profile.slideshow_path, status.current[id].active);
                 return Jimp.read(img_path).then((img) => {
                     var width = rect.Right - rect.Left, height = rect.Bottom - rect.Top;
                     var canvas = new Jimp(width, height);
@@ -179,9 +175,8 @@ exports.startService = function(argv) {
             monitors.monitors
             .reduce((canvas, monitor, idx) => canvas.blit(images[idx], monitor.rect.Left, monitor.rect.Top),
                                                           new Jimp(monitors.width, monitors.height))
-        ).then((background) => promisify(tmp.file)({mode: 0666, postfix: '.png', discardDescriptor: true})
-                .then((filepath) => promisify(background.write.bind(background))(filepath).then(() => filepath))
-        ).then((filepath) => 
+        ).then((background) => promisify(background.write.bind(background))(BG_PATH)
+        ).then(() => 
             promisify(winapi.FindWindow)({lpClassName: 'Progman', lpWindowName: null})
             .then((hwnd) => promisify(winapi.SendMessageTimeout)({
                 hwnd: hwnd,
@@ -191,7 +186,7 @@ exports.startService = function(argv) {
                 fuFlags: 0,
                 uTimeout: 500
             }))
-            .then(() => promisify(iad.SetWallpaper)({pwszWallpaper: filepath}))
+            .then(() => promisify(iad.SetWallpaper)({pwszWallpaper: BG_PATH}))
         ).then(() => promisify(iad.SetWallpaperOptions)({pwpo: {dwStyle: ad.WallpaperStyle.Span}})
         ).then(() => promisify(iad.ApplyChanges)({dwFlags: ad.Apply.All}));
     }
@@ -217,10 +212,21 @@ exports.startService = function(argv) {
         lock.acquire('everything', () => {
             let old_profiles = simpleClone(profiles);
             profiles = _profiles;
-            let needRender = monitors.monitors.map((monitor) => {
+            let status_updated = false;
+            let need_render = monitors.monitors.map((monitor) => {
                 var id = monitor.id;
                 let old_profile = old_profiles[id] || defaultProfile;
                 let profile = profiles[id] || defaultProfile;
+                if(status.future[id]
+                        && (old_profile.slideshow_path !== profile.slideshow_path
+                            || old_profile.shuffle !== profile.shuffle)) {
+                    status_updated = true;
+                    delete status.future[id];
+                }
+                if(status.future[id] && old_profile.interval !== profile.interval) {
+                    status_updated = true;
+                    status.future[id].nextTick = status.tick + profile.interval * 1000 * 60;
+                }
                 return (old_profile.background !== profile.background)
                     || (old_profile.fit !== profile.fit)
                     || (profile.background === 'picture'
@@ -229,9 +235,14 @@ exports.startService = function(argv) {
                         && (old_profile.slideshow_path !== profile.slideshow_path
                             || old_profile.shuffle !== profile.shuffle));
             }).reduce((rerender, v) => rerender || v, false);
-            if(needRender) {
+            if(need_render) {
                 clearTimeout(timer);
                 return endUpdate();
+            }
+            else if(status_updated) {
+                clearTimeout(timer);
+                return saveStatus()
+                    .then(setTimer);
             }
         });
     }
@@ -267,7 +278,8 @@ exports.startService = function(argv) {
 
     function createFuture(id) {
         return listCandidates(id).then((files) => {
-            if(profile.shuffle) {
+            let interval_ms = 1000 * 60 * profiles[id].interval;
+            if(profiles[id].shuffle) {
                 files = shuffle(files);
             }
             status.current[id] = {active: files.shift()};
@@ -279,7 +291,7 @@ exports.startService = function(argv) {
     }
 
     function checkFile(dir, fn) {
-        return promisify(fs.access)(path.join(dir, fn), fs.constants.R_OK);
+        return promisify(fs.access)(path.join(dir, fn), fs.constants.R_OK).then(() => fn);
     }
 
     function saveProfile() {
@@ -291,57 +303,34 @@ exports.startService = function(argv) {
     }
 };
 
+
 exports.installService = function() {
-    isAdmin().then((admin) => {
-        if(!admin) {
-            return elevator.execute(process.argv, {
-                waitForTermination: true
-            }, (err, stdout, stderr) => {
-                console.log(stdout);
-                if(err) {
-                    console.error("Installation failed!");
-                    console.error(err.message);
-                    process.exit(-1);
-                }
-                process.exit(0);
-            });
+    const key = new Registry({
+        hive: Registry.HKCU,
+        key: '\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
+    });
+    const val = isDev
+                ? `"${process.execPath}" "${process.cwd()}" service`
+                : `"${process.execPath} service"`;
+    key.set("Wallpaper Switcher Daemon", Registry.REG_SZ, val, (err) => {
+        if(err) {
+            console.error("Install failed: %s", err.message);
+            process.exit(-1);
         }
-        service.add('wallpaper-switcher-daemon', {
-            programPath: isDev ? process.cwd() : '',
-            programArgs: ['service'],
-            displayName: "Wallpaper Switcher Daemon"
-        }, (err) => {
-            if(err) {
-                console.error("Installation failed!");
-                console.error(err.message);
-                process.exit(-1);
-            }
-            process.exit(0);
-        });
+        process.exit(0);
     });
 };
 
 exports.removeService = function() {
-    isAdmin().then((admin) => {
-        if(!admin) {
-            return elevator.execute(process.argv, {
-                waitForTermination: true
-            }, (err, stdout, stderr) => {
-                if(err) {
-                    console.error("Removal failed!");
-                    console.trace(err);
-                    process.exit(-1);
-                }
-                process.exit(0);
-            });
+    const key = new Registry({
+        hive: Registry.HKCU,
+        key: '\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
+    });
+    key.remove("Wallpaper Switcher Daemon", (err) => {
+        if(err) {
+            console.error("Remove failed: %s", err.message);
+            process.exit(-1);
         }
-        service.remove('wallpaper-switcher-daemon', (err) => {
-            if(err) {
-                console.error("Removal failed!");
-                console.trace(err);
-                process.exit(-1);
-            }
-            process.exit(0);
-        });
+        process.exit(0);
     });
 };

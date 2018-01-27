@@ -157,9 +157,9 @@ class Background extends React.Component {
                 var result = [
                     <h3>Choose albums for your slideshow</h3>,
                     <p>{this.getConfig('slideshow_path')}</p>,
-                    <div className="button-gray" onClick={this.getConfig('selectSlideshow')}>Browse</div>,
+                    <div className="button-gray" onClick={this.selectSlideshow}>Browse</div>,
                     <h3>Change picture every</h3>,
-                    <Select onChange={this.handleIntervalChange} value={this.getConfig('interval')}>
+                    <Select onChange={this.handleIntervalChange} value={Number(this.getConfig('interval'))}>
                         <SelectItem value={1}>1 minute</SelectItem>
                         <SelectItem value={10}>10 minutes</SelectItem>
                         <SelectItem value={30}>30 minutes</SelectItem>
