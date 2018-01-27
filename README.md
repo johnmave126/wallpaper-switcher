@@ -59,5 +59,5 @@ Delivering a installer that handles autorun automatically is on the roadmap.
 - [ ] Wallpaper preview on config UI
 - [ ] Add comments to the source code.
 
-##License
+## License
 [MIT](https://github.com/johnmave126/wallpaper-switcher/blob/master/LICENSE)
