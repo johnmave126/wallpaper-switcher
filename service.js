@@ -8,6 +8,7 @@ const fs = require('fs');
 const Jimp = require('jimp');
 const tmp = require('tmp');
 const promisify = require('util.promisify');
+const AsyncLock = require('async-lock');
 
 const {simpleClone, shuffle} = require('./utils.js');
 const ad = require('./winapi/ActiveDesktop.js');
@@ -23,6 +24,7 @@ exports.startService = function(argv) {
     var profiles_store = new DataStore('config.json');
     var status_store = new DataStore('status.json');
     var timer = null;
+    var lock = new AsyncLock();
 
     var iad = ad.create(null, true);
 
@@ -35,7 +37,7 @@ exports.startService = function(argv) {
             interval: 30
     };
     const regex_image = /.+\.(jpg|jpeg|gif|png|bmp)$/;
-/*
+
     service.run(devnull(), () => {
         status_store.save(status, (err) => {
             var rcode = err ? -1 : 0;
@@ -43,7 +45,7 @@ exports.startService = function(argv) {
             process.exit(rcode);
         });
     });
-*/
+
     Promise.all([
         promisify(profiles_store.load.bind(profiles_store))(),
         promisify(status_store.load.bind(status_store))(),
@@ -59,19 +61,29 @@ exports.startService = function(argv) {
 
         boot();
     }, (err) => {
-        //service.stop(-1);
+        service.stop(-1);
         process.exit(-1);
     });
 
     function boot() {
         updateState()
+        .then((profile_updated) => {
+            if(profile_updated) {
+                return saveProfile();
+            }
+            return true;
+        })
         .then(commitBackground)
+        .then(saveStatus)
+        .then(setTimer)
         .then(() => {
-            process.exit(0);
+            monitorinfo.on('change', onUpdateMonitor);
+            profiles_store.on('change', onUpdateProfile);
         })
         .catch((err) => {
-            console.log(err);console.trace(err);
-        });
+            console.trace(err);
+            process.exit(-1);
+        })
     }
 
     function updateState() {
@@ -166,9 +178,9 @@ exports.startService = function(argv) {
         })).then((images) => 
             monitors.monitors
             .reduce((canvas, monitor, idx) => canvas.blit(images[idx], monitor.rect.Left, monitor.rect.Top),
-                                                          new Jimp(monitors.width, monitors.height));
+                                                          new Jimp(monitors.width, monitors.height))
         ).then((background) => promisify(tmp.file)({mode: 0666, postfix: '.png', discardDescriptor: true})
-        ).then((filepath) => promisify(background.write.bind(background)(filepath).then(()=>filepath)
+                .then((filepath) => promisify(background.write.bind(background))(filepath).then(() => filepath))
         ).then((filepath) => 
             promisify(winapi.FindWindow)({lpClassName: 'Progman', lpWindowName: null})
             .then((hwnd) => promisify(winapi.SendMessageTimeout)({
@@ -185,11 +197,66 @@ exports.startService = function(argv) {
     }
 
     function setTimer() {
-
+        var nextTick = monitors.monitors.filter((monitor) => 
+                profiles[monitor.id]
+                && profiles[monitor.id].background === 'slideshow'
+                && status.future[monitor.id]
+                && status.future[monitor.id].nextTick)
+            .reduce((tick, monitor) => Math.min(tick, status.future[monitor.id].nextTick), Number.MAX_SAFE_INTEGER);
+        timer = setTimeout(onUpdateSlideshow, Math.min(2147483647, Math.max(0, nextTick - Date.now())));
     }
 
-    function onUpdate() {
+    function onUpdateSlideshow() {
+        lock.acquire('everything', () => {
+            clearTimeout(timer);
+            return endUpdate();
+        });
+    }
 
+    function onUpdateProfile(_profiles) {
+        lock.acquire('everything', () => {
+            let old_profiles = simpleClone(profiles);
+            profiles = _profiles;
+            let needRender = monitors.monitors.map((monitor) => {
+                var id = monitor.id;
+                let old_profile = old_profiles[id] || defaultProfile;
+                let profile = profiles[id] || defaultProfile;
+                return (old_profile.background !== profile.background)
+                    || (old_profile.fit !== profile.fit)
+                    || (profile.background === 'picture'
+                        && (old_profile.picture_path !== profile.picture_path))
+                    || (profile.background === 'slideshow'
+                        && (old_profile.slideshow_path !== profile.slideshow_path
+                            || old_profile.shuffle !== profile.shuffle));
+            }).reduce((rerender, v) => rerender || v, false);
+            if(needRender) {
+                clearTimeout(timer);
+                return endUpdate();
+            }
+        });
+    }
+
+    function onUpdateMonitor(_monitors) {
+        lock.acquire('everything', () => {
+            clearTimeout(timer);
+            monitors = _monitors;
+            return endUpdate();
+        });
+    }
+
+    function endUpdate() {
+        return updateState()
+            .then((profile_updated) => {
+                profiles_store.removeListener('change', onUpdateProfile);
+                if(profile_updated) {
+                    return saveProfile();
+                }
+                return true;
+            })
+            .then(commitBackground)
+            .then(saveStatus)
+            .then(() => profiles_store.on('change', onUpdateProfile))
+            .then(setTimer);
     }
 
     function listCandidates(id) {
@@ -214,40 +281,67 @@ exports.startService = function(argv) {
     function checkFile(dir, fn) {
         return promisify(fs.access)(path.join(dir, fn), fs.constants.R_OK);
     }
+
+    function saveProfile() {
+        return promisify(profiles_store.save.bind(profiles_store))(profiles);
+    }
+
+    function saveStatus() {
+        return promisify(status_store.save.bind(status_store))(status);
+    }
 };
 
 exports.installService = function() {
-    isAdmin().then(() => {
+    isAdmin().then((admin) => {
+        if(!admin) {
+            return elevator.execute(process.argv, {
+                waitForTermination: true
+            }, (err, stdout, stderr) => {
+                console.log(stdout);
+                if(err) {
+                    console.error("Installation failed!");
+                    console.error(err.message);
+                    process.exit(-1);
+                }
+                process.exit(0);
+            });
+        }
         service.add('wallpaper-switcher-daemon', {
             programPath: isDev ? process.cwd() : '',
             programArgs: ['service'],
             displayName: "Wallpaper Switcher Daemon"
         }, (err) => {
-            console.error("Installation failed!");
-            console.trace(err);
-            process.exit(-1);
-        });
-    }).catch(() => {
-        elevator.execute(process.argv, (err, stdout, stderr) => {
             if(err) {
+                console.error("Installation failed!");
                 console.error(err.message);
+                process.exit(-1);
             }
+            process.exit(0);
         });
     });
 };
 
 exports.removeService = function() {
-    isAdmin().then(() => {
+    isAdmin().then((admin) => {
+        if(!admin) {
+            return elevator.execute(process.argv, {
+                waitForTermination: true
+            }, (err, stdout, stderr) => {
+                if(err) {
+                    console.error("Removal failed!");
+                    console.trace(err);
+                    process.exit(-1);
+                }
+                process.exit(0);
+            });
+        }
         service.remove('wallpaper-switcher-daemon', (err) => {
-            console.error("Removal failed!");
-            console.trace(err);
-            process.exit(-1);
-        });
-    }).catch(() => {
-        elevator.execute(process.argv, (err, stdout, stderr) => {
             if(err) {
-                console.error(err.message);
+                console.error("Removal failed!");
+                console.trace(err);
+                process.exit(-1);
             }
+            process.exit(0);
         });
     });
 };

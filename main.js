@@ -9,6 +9,12 @@ if(isDev) {
     require('electron-reload')(__dirname, {electron: path.join(__dirname, 'node_modules', '.bin', 'electron')});
 }
 
+process.on('uncaughtException', (error) => {
+    console.error(error.message);
+    console.trace(error);
+    process.exit(-1);
+});
+
 require('yargs')
     .usage('$0 [cmd]')
     .command('$0', 'run the config program', () => {}, fix0(run_config))
