@@ -6,8 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch": "watchify ./app/app.js -t babelify -o static/js/bundle.js",
-    "start": "electron . service",
+    "start": "npm run buildreact && electron .",
     "buildreact": "browserify ./app/app.js -t babelify -o static/js/bundle.js",
+    "postinstall": "electron-rebuild",
     "clean": "rimraf build",
     "pack": "npm run buildreact && npm run clean && electron-packager . wallpaper-switcher --platform=win32 --arch=x64 --overwrite --out=build --ignore=\"\\.gitignore\" --ignore=\".*\\.sublime-project\" --ignore=\".*\\.sublime-workspace\" --ignore=\"\\.tern-project\" --ignore=\"app/\""
   },
