@@ -51,8 +51,8 @@ exports.startService = function(argv) {
         status.current = status.current || {};
         status.future = status.future || {};
 
-        boot();
-    }, (err) => {
+        return boot();
+    }).catch((err) => {
         logger.error(err.message);
         service.stop(-1);
         process.exit(-1);
@@ -72,13 +72,9 @@ exports.startService = function(argv) {
         .then(() => {
             monitorinfo.on('change', onUpdateMonitor);
             profiles_store.on('change', onUpdateProfile);
-            logger.warn('started');
+            logger.info('daemon started');
         })
-        .catch((err) => {
-            logger.error(err.message);
-            service.stop(-1);
-            process.exit(-1);
-        });
+        ;
     }
 
     function updateState() {
@@ -103,7 +99,7 @@ exports.startService = function(argv) {
                     return createFuture(id).then(() => profile_updated);
                 }
                 else {
-                    var nextTick = status.future[id].nextTick || status.tick + interval_ms;
+                    var nextTick = status.future[id].nextTick || (status.tick + interval_ms);
                     if(nextTick < status.tick + 60 * 1000) {
                         //Advance tick
                         status.future[id].nextTick += Math.ceil((status.tick + 60 * 1000 - nextTick) / (interval_ms)) * interval_ms;
@@ -116,10 +112,10 @@ exports.startService = function(argv) {
                             if(status.future[id].queue.length === 0) {
                                 return createFuture(id).then(() => profile_updated);
                             }
-                            return checkFile(profiles[id].slideshow_path, status.future[id].queue.shift())
+                            return checkFile(profile.slideshow_path, status.future[id].queue.shift())
                                    .then(shift_success, shift_fail);
                         }
-                        return checkFile(profiles[id].slideshow_path, status.future[id].queue.shift())
+                        return checkFile(profile.slideshow_path, status.future[id].queue.shift())
                                .then(shift_success, shift_fail);
                     }
                 }
@@ -134,9 +130,14 @@ exports.startService = function(argv) {
             var rect = monitor.rect;
             var profile = profiles[id];
             if(profile.background === 'picture' || profile.background === 'slideshow') {
-                var img_path = profile.background === 'picture'
-                             ? profile.picture_path
-                             : path.join(profile.slideshow_path, status.current[id].active);
+                try {
+                    var img_path = profile.background === 'picture'
+                                 ? profile.picture_path
+                                 : path.join(profile.slideshow_path, status.current[id].active);
+                }
+                catch(err) {
+                    return new Jimp(rect.Right - rect.Left, rect.Bottom - rect.Top);
+                }
                 return Jimp.read(img_path).then((img) => {
                     var width = rect.Right - rect.Left, height = rect.Bottom - rect.Top;
                     var canvas = new Jimp(width, height);
