@@ -21,6 +21,7 @@ exports.startService = function(argv) {
     const BG_FN = 'wallpaper-switcher-background.png';
     const BG_PATH = path.join(tmpdir(), BG_FN);
 
+
     var status, profiles, monitors;
     var profiles_store = new DataStore('config.json');
     var status_store = new DataStore('status.json');
@@ -54,7 +55,6 @@ exports.startService = function(argv) {
         return boot();
     }).catch((err) => {
         logger.error(err.message);
-        service.stop(-1);
         process.exit(-1);
     });
 
@@ -292,7 +292,13 @@ exports.startService = function(argv) {
     }
 
     function checkFile(dir, fn) {
-        return promisify(fs.access)(path.join(dir, fn), fs.constants.R_OK).then(() => fn);
+        try {
+            var filepath = path.join(dir, fn);
+        }
+        catch(err) {
+            return Promise.reject();
+        }
+        return promisify(fs.access)(filepath, fs.constants.R_OK).then(() => fn);
     }
 
     function saveProfile() {
