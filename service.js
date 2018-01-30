@@ -318,7 +318,7 @@ exports.installService = function() {
     });
     const val = isDev
                 ? `"${process.execPath}" "${process.cwd()}" service`
-                : `"${process.execPath} service"`;
+                : `"${process.execPath}" service`;
     key.set("Wallpaper Switcher Daemon", Registry.REG_SZ, val, (err) => {
         if(err) {
             console.error("Install failed: %s", err.message);
