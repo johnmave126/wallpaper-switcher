@@ -1,6 +1,5 @@
 const path = require('path');
 const isDev = require('electron-is-dev');
-const AutoLaunch = require('auto-launch');
 const fs = require('fs');
 const Jimp = require('jimp');
 const promisify = require('util.promisify');
