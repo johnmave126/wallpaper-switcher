@@ -1,6 +1,6 @@
 var exports = module.exports = {};
 
-const edge = require('edge');
+const edge = require('electron-edge-js');
 const path = require('path');
 
 var Apply = exports.Apply = {};

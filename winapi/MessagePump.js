@@ -1,4 +1,4 @@
-const edge = require('edge');
+const edge = require('electron-edge-js');
 const path = require('path');
 
 module.exports = edge.func({
