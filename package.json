@@ -23,14 +23,14 @@
   "repository": "johnmave126/wallpaper-switcher",
   "license": "MIT",
   "dependencies": {
-    "async-lock": "^1.1.0",
+    "async-lock": "^1.1.2",
     "classnames": "^2.2.5",
     "color": "^2.0.1",
     "electron-edge-js": "^10.11.0",
     "electron-is-dev": "^0.3.0",
     "elevator": "^2.2.3",
     "file-url": "^2.0.2",
-    "immutability-helper": "^2.6.4",
+    "immutability-helper": "^2.6.6",
     "jimp": "^0.2.28",
     "node-abi": "^2.5.1",
     "prop-types": "^15.6.0",
@@ -38,7 +38,7 @@
     "react-dom": "^15.6.2",
     "util.promisify": "^1.0.0",
     "winreg": "^1.2.4",
-    "winston": "^2.4.0",
+    "winston": "^2.4.1",
     "yargs": "^10.1.2"
   },
   "devDependencies": {
@@ -54,6 +54,6 @@
     "electron-reload": "^1.2.1",
     "node-gyp": "^3.8.0",
     "rimraf": "^2.6.2",
-    "watchify": "^3.9.0"
+    "watchify": "^3.11.0"
   }
 }
