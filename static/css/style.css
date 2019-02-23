@@ -52,12 +52,16 @@ a:active {
     content: "\e946";
 }
 
-.icon-monitor::before {
+.icon-background::before {
     content: "\eb9f";
 }
 
 .icon-menu::before {
     content: "\e713";
+}
+
+.icon-monitor::before {
+    content:  "\e7f4";
 }
 
 /* Clickable */
@@ -399,6 +403,12 @@ a:active {
     background-color: #F2F2F2;
     position: relative;
     margin-bottom: 5px !important;
+}
+
+.selected-monitor-info > .icon-monitor {
+    padding: 5px;
+    font-size: 2em;
+    vertical-align: middle;
 }
 
 .monitor-selector {

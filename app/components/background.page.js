@@ -19,6 +19,7 @@ class Background extends React.Component {
                 monitors: []
             },
             selectedMonitor: '',
+            selectedMonitorInfo: {},
             profiles: {}
         };
 
@@ -53,8 +54,13 @@ class Background extends React.Component {
             };
             if(info.monitors.map((x) => x.id).indexOf(prevState.selectedMonitor) === -1) {
                 updater.selectedMonitor = '';
+                updater.selectedMonitorInfo = {
+                    name: "Unkown",
+                    id: ""
+                };
                 if(info.monitors.length > 0) {
                     updater.selectedMonitor = info.monitors[0].id;
+                    updater.selectedMonitorInfo = info.monitors[0];
                 }
             }
             return updater;
@@ -68,8 +74,12 @@ class Background extends React.Component {
     }
 
     handleMonitorSwitch(new_id) {
-        this.setState({
-            selectedMonitor: new_id
+        this.setState((prevState) => {
+            const monitor = prevState.monitorInfo.monitors.filter(x => x.id === new_id)[0] || info.monitors[0] || {Name: "Unknown"};
+            return {
+                selectedMonitor: new_id,
+                selectedMonitorInfo: monitor
+            }
         });
     }
 
@@ -182,6 +192,7 @@ class Background extends React.Component {
             <div className="body">
                 <h2>Select displays</h2>
                 <p>Select a display below to change its wallpaper and settings</p>
+                <p className={`selected-monitor-info`}><span className={`icon icon-monitor`}></span><span>{this.state.selectedMonitorInfo.name}</span></p>
                 <MonitorSelector onChange={this.handleMonitorSwitch} monitorInfo={this.state.monitorInfo} selectedMonitor={this.state.selectedMonitor} />
                 <div className="monitor-tools">
                     <div className="button-gray" onClick={this.detectMonitor}>Detect</div>

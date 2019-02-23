@@ -10,7 +10,7 @@ class Nav extends React.Component {
 
     render() {
         const items = [
-            {name: 'Background', iconClass: 'monitor'},
+            {name: 'Background', iconClass: 'background'},
             {name: 'About', iconClass: 'info'}
         ].map(function(item) {
             return (

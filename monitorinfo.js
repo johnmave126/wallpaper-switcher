@@ -1,34 +1,62 @@
 const EventEmitter = require("events").EventEmitter;
-const dw = require('./winapi/DesktopWallpaper.js');
+const Registry = require("winreg");
+const EdidReader = require('edid-reader');
+const util = require("util");
+const idw = require('./winapi/DesktopWallpaper.js').DesktopWallpaper;
 const pump = require('./winapi/MessagePump.js');
 const logger = require('./logger.js');
 
+const GetMonitorDevicePathCount = util.promisify(idw.GetMonitorDevicePathCount)
+const GetMonitorDevicePathAt = util.promisify(idw.GetMonitorDevicePathAt);
+const GetMonitorRECT = util.promisify(idw.GetMonitorRECT);
+
+async function queryEDID(device_id) {
+    const [display_type, device_path] = device_id.split('#').slice(1, 3);
+    const reg_key = new Registry({
+        hive: Registry.HKLM,
+        key:  `\\SYSTEM\\CurrentControlSet\\Enum\\DISPLAY\\${display_type}\\${device_path}\\Device Parameters`
+    });
+    reg_key.getPromise = util.promisify(reg_key.get);
+    try {
+        const edid_item = await reg_key.getPromise('EDID');
+        if(edid_item.type !== Registry.REG_BINARY) {
+            throw "EDID not exists";
+        }
+        const raw_edid = Buffer.from(edid_item.value, 'hex');
+        const edid = EdidReader.parse(raw_edid);
+        return {
+            id: `${edid.modelName}|${edid.serialNumber}`,
+            name: edid.modelName
+        };
+    }
+    catch (e) {
+        return {
+            id: device_id,
+            name: 'Unknown'
+        };
+    }
+}
+
 class MonitorInfo extends EventEmitter {
-    load(callback = () => {}) {
-        var idw = dw.DesktopWallpaper;
-        var monitors = [];
-        var err;
-        try {
-            var monitor_cnt = idw.GetMonitorDevicePathCount(null, true);
-            for(var i = 0; i < monitor_cnt; i++) {
-                var id = idw.GetMonitorDevicePathAt({monitorIndex: i}, true);
-                try {
-                    var rect = idw.GetMonitorRECT({monitorID: id}, true);
-                    monitors.push({
-                        id: id,
-                        rect: rect
-                    });
-                }
-                catch (e) {
-                    //Do nothing
-                }
+    async load() {
+        const monitors = [];
+        const monitor_cnt = await GetMonitorDevicePathCount(null);
+        for(var i = 0; i < monitor_cnt; i++) {
+            const id = await GetMonitorDevicePathAt({monitorIndex: i});
+            try {
+                const rect = await GetMonitorRECT({monitorID: id});
+                const edid_info = await queryEDID(id);
+                monitors.push({
+                    ...edid_info,
+                    rect: rect
+                });
+            }
+            catch (e) {
+                console.log(e);
+                //Do nothing
             }
         }
-        catch (e) {
-            err = e;
-        }
-
-        callback(err, transform(monitors));
+        return transform(monitors);
     }
 }
 
@@ -37,25 +65,25 @@ var exports = module.exports = new MonitorInfo();
 pump.subscribe(function(_, callback) {
     logger.debug('Monitor changed');
     //Need to wait for some time to ensure that DesktopWallpaper updates itself
-    setTimeout(function(){
-        exports.load(function(err, monitors) {
-            if(err) {
-                logger.error('Cannot fetch monitor info: %s', err.message);
-                return;
-            }
+    setTimeout(() => {
+        exports.load
+        .then(monitors => {
             exports.emit('change', monitors);
             //Check again after 7s in case the monitor starts slow
-            setTimeout(function() {
-                exports.load(function(err, new_monitors) {
-                    if(err) {
-                        logger.error('Cannot fetch monitor info: %s', err.message);
-                        return;
-                    }
+            setTimeout(() => {
+                exports.load
+                .then(new_monitors => {
                     if(!compare_monitors(monitors, new_monitors)) {
                         exports.emit('change', new_monitors);
                     }
+                })
+                .catch(err => {
+                    logger.error('Cannot fetch monitor info: %s', err.message);
                 });
             }, 7000);
+        })
+        .catch(err => {
+            logger.error('Cannot fetch monitor info: %s', err.message);
         });
     }, 3000);
 });

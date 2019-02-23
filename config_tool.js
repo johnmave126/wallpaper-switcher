@@ -42,9 +42,9 @@ exports.createWindow = function() {
     });
 
     ipcMain.on('query-monitors', () => {
-        monitorinfo.load((_, monitors) => {
+        monitorinfo.load().then(monitors => {
             win.send('monitors', simpleClone(monitors));
-        });
+        }).catch(() => {});
     });
 
     monitorinfo.on('change', (new_monitors) => {

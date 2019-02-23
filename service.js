@@ -42,7 +42,7 @@ exports.startService = function(argv) {
     Promise.all([
         promisify(profiles_store.load.bind(profiles_store))(),
         promisify(status_store.load.bind(status_store))(),
-        promisify(monitorinfo.load.bind(monitorinfo))()
+        monitorinfo.load()
     ]).then((loaded_val) => {
         profiles = simpleClone(loaded_val[0]);
         status = simpleClone(loaded_val[1]);
